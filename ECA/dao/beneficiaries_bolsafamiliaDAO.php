@@ -1,0 +1,218 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: arthurvalle
+ * Date: 27/09/2018
+ * Time: 20:14
+ */
+
+require_once "db/connection.php";
+require_once "classes/beneficiaries_bolsafamilia.php";
+
+class beneficiaries_bolsafamiliaDAO
+{
+
+    public function remover($beneficiaries)
+    {
+        global $pdo;
+        try {
+            $statement = $pdo->prepare("DELETE FROM tb_beneficiaries_bolsafamilia WHERE id_beneficiaries = :id");
+            $statement->bindValue(":id", $beneficiaries->getIdBeneficiaries());
+            if ($statement->execute()) {
+                return "<script> alert('Registo foi excluído com êxito !'); </script>";
+            } else {
+                throw new PDOException("<script> alert('Não foi possível executar a declaração SQL !'); </script>");
+            }
+        } catch (PDOException $erro) {
+            return "Erro: " . $erro->getMessage();
+        }
+    }
+
+    public function salvar($beneficiaries)
+    {
+        global $pdo;
+        try {
+            if ($beneficiaries->getIdBeneficiaries() != "") {                                                                       //:int_ano_mes_ref, :int_ano_mes_comp, :int_uf, :int_cod_municipio, :str_nome_municipio, :str_nis_beneficiario, :str_nome_beneficiario, :str_data_saque, :flt_valor_saque
+
+                $statement = $pdo->prepare("UPDATE tb_beneficiaries_bolsafamilia SET int_ano_mes_ref=:int_ano_mes_ref, int_ano_mes_comp=:int_ano_mes_comp, int_uf=:int_uf, int_cod_municipio=:int_cod_municipio, str_nome_municipio=:str_nome_municipio, str_nis_beneficiario=:str_nis_beneficiario, str_nome_beneficiario=:str_nome_beneficiario, str_data_saque=:str_data_saque, flt_valor_saque=:flt_valor_saque WHERE id_beneficiaries = :id;");
+                $statement->bindValue(":id", $beneficiaries->getIdBeneficiaries());
+            } else {
+                $statement = $pdo->prepare("INSERT INTO tb_beneficiaries_bolsafamilia (int_ano_mes_ref, int_ano_mes_comp, int_uf, int_cod_municipio, str_nome_municipio, str_nis_beneficiario, str_nome_beneficiario, str_data_saque, flt_valor_saque) VALUES (:int_ano_mes_ref, :int_ano_mes_comp, :int_uf, :int_cod_municipio, :str_nome_municipio, :str_nis_beneficiario, :str_nome_beneficiario, :str_data_saque, :flt_valor_saque)");
+            }
+
+
+            $statement->bindValue(":int_ano_mes_ref", $beneficiaries->getIntAnoMesRef());
+            $statement->bindValue(":int_ano_mes_comp", $beneficiaries->getIntAnoMesComp());
+            $statement->bindValue(":int_uf", $beneficiaries->getIntUf());
+            $statement->bindValue(":int_cod_municipio", $beneficiaries->getIntCodMunicipio());
+            $statement->bindValue(":str_nome_municipio", $beneficiaries->getStrNomeMunicipio());
+            $statement->bindValue(":str_nis_beneficiario", $beneficiaries->getStrNisBeneficiario());
+            $statement->bindValue(":str_nome_beneficiario", $beneficiaries->getStrNomeBeneficiario());
+            $statement->bindValue(":str_data_saque", $beneficiaries->getStrDataSaque());
+            $statement->bindValue(":flt_valor_saque", $beneficiaries->getFltValorSaque());
+
+            if ($statement->execute()) {
+                if ($statement->rowCount() > 0) {
+                    return "<script> alert('Dados cadastrados com sucesso !'); </script>";
+                } else {
+                    return "<script> alert('Erro ao tentar efetivar cadastro !'); </script>";
+                }
+            } else {
+                throw new PDOException("<script> alert('Não foi possível executar a declaração SQL !'); </script>");
+            }
+        } catch (PDOException $erro) {
+            return "Erro: " . $erro->getMessage();
+        }
+    }
+
+    public function atualizar($beneficiaries)
+    {
+        global $pdo;
+        try {
+            $statement = $pdo->prepare("SELECT id_beneficiaries, int_ano_mes_ref, int_ano_mes_comp, int_uf, int_cod_municipio, str_nome_municipio, str_nis_beneficiario, str_nome_beneficiario, str_data_saque, flt_valor_saque FROM tb_beneficiaries_bolsafamilia WHERE id_beneficiaries = :id");
+            $statement->bindValue(":id", $beneficiaries->getIdBeneficiaries());
+            if ($statement->execute()) {
+                $rs = $statement->fetch(PDO::FETCH_OBJ);
+
+
+                $beneficiaries->setIdBeneficiaries($rs->id_beneficiaries);
+                $beneficiaries->setIntAnoMesRef($rs->int_ano_mes_ref);
+                $beneficiaries->setIntAnoMesComp($rs->int_ano_mes_comp);
+                $beneficiaries->setIntUf($rs->int_uf);
+                $beneficiaries->setIntCodMunicipio($rs->int_cod_municipio);
+                $beneficiaries->setStrNomeMunicipio($rs->str_nome_municipio);
+                $beneficiaries->setStrNisBeneficiario($rs->str_nis_beneficiario);
+                $beneficiaries->setStrNomeBeneficiario($rs->str_nome_beneficiario);
+                $beneficiaries->setStrDataSaque($rs->str_data_saque);
+                $beneficiaries->setFltValorSaque($rs->flt_valor_saque);
+
+                return $beneficiaries;
+            } else {
+                throw new PDOException("<script> alert('Não foi possível executar a declaração SQL !'); </script>");
+            }
+        } catch (PDOException $erro) {
+            return "Erro: " . $erro->getMessage();
+        }
+    }
+
+    public function tabelapaginada()
+    {
+
+        //carrega o banco
+        global $pdo;
+
+        //endereço atual da página
+        $endereco = $_SERVER ['PHP_SELF'];
+
+        /* Constantes de configuração */
+        define('QTDE_REGISTROS', 10);
+        define('RANGE_PAGINAS', 2);
+
+        /* Recebe o número da página via parâmetro na URL */
+        $pagina_atual = (isset($_GET['page']) && is_numeric($_GET['page'])) ? $_GET['page'] : 1;
+
+        /* Calcula a linha inicial da consulta */
+        $linha_inicial = ($pagina_atual - 1) * QTDE_REGISTROS;
+
+        /* Instrução de consulta para paginação com MySQL */
+        $sql = "SELECT id_beneficiaries, int_ano_mes_ref, int_ano_mes_comp, int_uf, int_cod_municipio, str_nome_municipio, str_nis_beneficiario, str_nome_beneficiario, str_data_saque, flt_valor_saque FROM tb_beneficiaries_bolsafamilia LIMIT {$linha_inicial}, " . QTDE_REGISTROS;
+        $statement = $pdo->prepare($sql);
+
+        try {
+            $statement->execute();
+            $dados = $statement->fetchAll(PDO::FETCH_OBJ);
+        } catch (Exception $e) {
+            var_dump($e);
+        }
+
+
+        /* Conta quantos registos existem na tabela */
+        $sqlContador = "SELECT COUNT(*) AS total_registros FROM tb_beneficiaries_bolsafamilia";
+        $statement = $pdo->prepare($sqlContador);
+        $statement->execute();
+        $valor = $statement->fetch(PDO::FETCH_OBJ);
+
+        /* Idêntifica a primeira página */
+        $primeira_pagina = 1;
+
+        /* Cálcula qual será a última página */
+        $ultima_pagina = ceil($valor->total_registros / QTDE_REGISTROS);
+
+        /* Cálcula qual será a página anterior em relação a página atual em exibição */
+        $pagina_anterior = ($pagina_atual > 1) ? $pagina_atual - 1 : 0;
+
+        /* Cálcula qual será a pŕoxima página em relação a página atual em exibição */
+        $proxima_pagina = ($pagina_atual < $ultima_pagina) ? $pagina_atual + 1 : 0;
+
+        /* Cálcula qual será a página inicial do nosso range */
+        $range_inicial = (($pagina_atual - RANGE_PAGINAS) >= 1) ? $pagina_atual - RANGE_PAGINAS : 1;
+
+        /* Cálcula qual será a página final do nosso range */
+        $range_final = (($pagina_atual + RANGE_PAGINAS) <= $ultima_pagina) ? $pagina_atual + RANGE_PAGINAS : $ultima_pagina;
+
+        /* Verifica se vai exibir o botão "Primeiro" e "Pŕoximo" */
+        $exibir_botao_inicio = ($range_inicial < $pagina_atual) ? 'mostrar' : 'esconder';
+
+        /* Verifica se vai exibir o botão "Anterior" e "Último" */
+        $exibir_botao_final = ($range_final > $pagina_atual) ? 'mostrar' : 'esconder';
+//int_ano_mes_ref, int_ano_mes_comp, int_uf, int_cod_municipio, str_nome_municipio, str_nis_beneficiario, str_nome_beneficiario, str_data_saque, flt_valor_saque
+        if (!empty($dados)):
+            echo "
+     <table class='table table-striped table-bordered'>
+     <thead>
+       <tr style='text-transform: uppercase;' class='active'>
+        <th style='text-align: center; font-weight: bolder;'>Code</th>
+        <th style='text-align: center; font-weight: bolder;'>ANOMES REF</th>
+        <th style='text-align: center; font-weight: bolder;'>ANOMES COMP</th>
+        <th style='text-align: center; font-weight: bolder;'>ID UF</th>
+        <th style='text-align: center; font-weight: bolder;'>ID CIDADE</th>
+        <th style='text-align: center; font-weight: bolder;'>NOME CIDADE</th>
+        <th style='text-align: center; font-weight: bolder;'>NIS</th>
+        <th style='text-align: center; font-weight: bolder;'>RGP</th>
+        <th style='text-align: center; font-weight: bolder;'>NOME</th>
+        <th style='text-align: center; font-weight: bolder;'>PARCELA</th>
+        <th style='text-align: center; font-weight: bolder;' colspan='2'>Actions</th>
+       </tr>
+     </thead>
+     <tbody>";
+            foreach ($dados as $bene):
+                echo "<tr>
+        <td style='text-align: center'>$bene->id_beneficiaries</td>
+        <td style='text-align: center'>$bene->int_ano_mes_ref</td>
+        <td style='text-align: center'>$bene->int_ano_mes_comp</td>
+        <td style='text-align: center'>$bene->int_uf</td>
+        <td style='text-align: center'>$bene->int_cod_municipio</td>
+        <td style='text-align: center'>$bene->str_nome_municipio</td>
+        <td style='text-align: center'>$bene->str_nis_beneficiario</td>
+        <td style='text-align: center'>$bene->str_nome_beneficiario</td>
+        <td style='text-align: center'>$bene->str_data_saque</td>
+        <td style='text-align: center'>$bene->flt_valor_saque</td>
+        <td style='text-align: center'><a href='?act=upd&id=$bene->id_beneficiaries' title='Alterar'><i class='ti-reload'></i></a></td>
+        <td style='text-align: center'><a href='?act=del&id=$bene->id_beneficiaries' title='Remover'><i class='ti-close'></i></a></td>
+       </tr>";
+            endforeach;
+            echo "
+</tbody>
+     </table>
+
+    <div class='box-paginacao' style='text-align: center'>
+       <a class='box-navegacao  $exibir_botao_inicio' href='$endereco?page=$primeira_pagina' title='Primeira Página'> FIRST  |</a>
+       <a class='box-navegacao  $exibir_botao_inicio' href='$endereco?page=$pagina_anterior' title='Página Anterior'> PREVIOUS  |</a>
+";
+
+            /* Loop para montar a páginação central com os números */
+            for ($i = $range_inicial; $i <= $range_final; $i++):
+                $destaque = ($i == $pagina_atual) ? 'destaque' : '';
+                echo "<a class='box-numero $destaque' href='$endereco?page=$i'> ( $i ) </a>";
+            endfor;
+
+            echo "<a class='box-navegacao $exibir_botao_final' href='$endereco?page=$proxima_pagina' title='Próxima Página'>| NEXT  </a>
+                  <a class='box-navegacao $exibir_botao_final' href='$endereco?page=$ultima_pagina'  title='Última Página'>| LAST  </a>
+     </div>";
+        else:
+            echo "<p class='bg-danger'>Nenhum registro foi encontrado!</p>
+     ";
+        endif;
+
+    }
+}
